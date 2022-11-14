@@ -58,14 +58,14 @@ declare global {
     }
 }
 
-interface JsSocket {
+export interface JsSocket {
     isOnline(): boolean;
     send(buf: Uint8Array): void;
     poll(): Uint8Array | null;
     close(): void;
 }
 
-class JsSocket {}
+export class JsSocket {}
 
 const wrapJsSocket = (socket: JsSocket) =>
     Object.assign(new JsSocket(), socket);
