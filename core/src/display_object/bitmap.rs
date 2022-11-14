@@ -120,11 +120,22 @@ impl<'gc> Bitmap<'gc> {
     pub fn new(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
-        bitmap_handle: BitmapHandle,
-        width: u16,
-        height: u16,
-    ) -> Self {
-        Self::new_with_bitmap_data(context, id, Some(bitmap_handle), width, height, None, true)
+        bitmap: ruffle_render::bitmap::Bitmap,
+    ) -> Result<Self, ruffle_render::error::Error> {
+        let width = bitmap.width() as u16;
+        let height = bitmap.height() as u16;
+        let bitmap_handle = context.renderer.register_bitmap(bitmap)?;
+        let bitmap_data = None;
+        let smoothing = true;
+        Ok(Self::new_with_bitmap_data(
+            context,
+            id,
+            Some(bitmap_handle),
+            width,
+            height,
+            bitmap_data,
+            smoothing,
+        ))
     }
 
     #[allow(dead_code)]
@@ -297,19 +308,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         let bitmap_data = self.0.read();
         if let Some(bitmap_handle) = bitmap_data.bitmap_handle {
             if let Some(inner_bitmap_data) = bitmap_data.bitmap_data {
-                let bd = inner_bitmap_data.read();
-                if bd.dirty() {
-                    if let Err(e) = context.renderer.update_texture(
-                        bitmap_handle,
-                        bd.width(),
-                        bd.height(),
-                        bd.pixels_rgba(),
-                    ) {
-                        log::error!("Failed to update dirty bitmap {:?}: {:?}", bitmap_handle, e);
-                    }
-                    drop(bd);
-                    inner_bitmap_data.write(context.gc_context).set_dirty(false);
-                }
+                if let Ok(mut bd) = inner_bitmap_data.try_write(context.gc_context) {
+                    bd.update_dirty_texture(context);
+                } else {
+                    return; // bail, this is caused by recursive render attempt. TODO: support this.
+                };
             }
 
             context.commands.render_bitmap(
@@ -326,6 +329,10 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .avm2_object
             .map(|o| o.into())
             .unwrap_or(Avm2Value::Undefined)
+    }
+
+    fn set_object2(&mut self, mc: MutationContext<'gc, '_>, to: Avm2Object<'gc>) {
+        self.0.write(mc).avm2_object = Some(to);
     }
 
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {

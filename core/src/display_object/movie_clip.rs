@@ -828,8 +828,8 @@ impl<'gc> MovieClip<'gc> {
             let end = sfl_data
                 .scenes
                 .get(i + 1)
-                .map(|fld| fld.frame_num + 1)
-                .unwrap_or_else(|| static_data.total_frames as u32 + 1);
+                .map(|fld| fld.frame_num as u16 + 1)
+                .unwrap_or_else(|| static_data.total_frames + 1);
 
             let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
             static_data.scene_labels.insert(
@@ -837,7 +837,7 @@ impl<'gc> MovieClip<'gc> {
                 Scene {
                     name: label,
                     start,
-                    length: end as u16 - start as u16,
+                    length: end - start,
                 },
             );
         }
@@ -1339,16 +1339,16 @@ impl<'gc> MovieClip<'gc> {
             match tag_code {
                 TagCode::DoAction => self.do_action(context, reader, tag_len),
                 TagCode::PlaceObject if run_display_actions && !context.is_action_script_3() => {
-                    self.place_object(context, reader, tag_len, 1)
+                    self.place_object(context, reader, 1)
                 }
                 TagCode::PlaceObject2 if run_display_actions && !context.is_action_script_3() => {
-                    self.place_object(context, reader, tag_len, 2)
+                    self.place_object(context, reader, 2)
                 }
                 TagCode::PlaceObject3 if run_display_actions && !context.is_action_script_3() => {
-                    self.place_object(context, reader, tag_len, 3)
+                    self.place_object(context, reader, 3)
                 }
                 TagCode::PlaceObject4 if run_display_actions && !context.is_action_script_3() => {
-                    self.place_object(context, reader, tag_len, 4)
+                    self.place_object(context, reader, 4)
                 }
                 TagCode::RemoveObject if run_display_actions && !context.is_action_script_3() => {
                     self.remove_object(context, reader, 1)
@@ -1357,22 +1357,22 @@ impl<'gc> MovieClip<'gc> {
                     self.remove_object(context, reader, 2)
                 }
                 TagCode::PlaceObject if run_display_actions && context.is_action_script_3() => {
-                    self.queue_place_object(context, reader, tag_len, 1)
+                    self.queue_place_object(context, reader, 1)
                 }
                 TagCode::PlaceObject2 if run_display_actions && context.is_action_script_3() => {
-                    self.queue_place_object(context, reader, tag_len, 2)
+                    self.queue_place_object(context, reader, 2)
                 }
                 TagCode::PlaceObject3 if run_display_actions && context.is_action_script_3() => {
-                    self.queue_place_object(context, reader, tag_len, 3)
+                    self.queue_place_object(context, reader, 3)
                 }
                 TagCode::PlaceObject4 if run_display_actions && context.is_action_script_3() => {
-                    self.queue_place_object(context, reader, tag_len, 4)
+                    self.queue_place_object(context, reader, 4)
                 }
                 TagCode::RemoveObject if run_display_actions && context.is_action_script_3() => {
-                    self.queue_remove_object(context, reader, tag_len, 1)
+                    self.queue_remove_object(context, reader, 1)
                 }
                 TagCode::RemoveObject2 if run_display_actions && context.is_action_script_3() => {
-                    self.queue_remove_object(context, reader, tag_len, 2)
+                    self.queue_remove_object(context, reader, 2)
                 }
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
                 TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
@@ -1675,60 +1675,28 @@ impl<'gc> MovieClip<'gc> {
             self.0.write(context.gc_context).current_frame += 1;
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
-            use swf::TagCode;
-            let tag_callback = |reader: &mut _, tag_code, tag_len| {
+            let tag_callback = |reader: &mut _, tag_code, _tag_len| {
+                use swf::TagCode;
                 match tag_code {
                     TagCode::PlaceObject => {
                         index += 1;
                         let mut mc = self.0.write(context.gc_context);
-
-                        mc.goto_place_object(
-                            reader,
-                            tag_len,
-                            1,
-                            &mut goto_commands,
-                            is_rewind,
-                            index,
-                        )
+                        mc.goto_place_object(reader, 1, &mut goto_commands, is_rewind, index)
                     }
                     TagCode::PlaceObject2 => {
                         index += 1;
                         let mut mc = self.0.write(context.gc_context);
-
-                        mc.goto_place_object(
-                            reader,
-                            tag_len,
-                            2,
-                            &mut goto_commands,
-                            is_rewind,
-                            index,
-                        )
+                        mc.goto_place_object(reader, 2, &mut goto_commands, is_rewind, index)
                     }
                     TagCode::PlaceObject3 => {
                         index += 1;
                         let mut mc = self.0.write(context.gc_context);
-
-                        mc.goto_place_object(
-                            reader,
-                            tag_len,
-                            3,
-                            &mut goto_commands,
-                            is_rewind,
-                            index,
-                        )
+                        mc.goto_place_object(reader, 3, &mut goto_commands, is_rewind, index)
                     }
                     TagCode::PlaceObject4 => {
                         index += 1;
                         let mut mc = self.0.write(context.gc_context);
-
-                        mc.goto_place_object(
-                            reader,
-                            tag_len,
-                            4,
-                            &mut goto_commands,
-                            is_rewind,
-                            index,
-                        )
+                        mc.goto_place_object(reader, 4, &mut goto_commands, is_rewind, index)
                     }
                     TagCode::RemoveObject => self.goto_remove_object(
                         reader,
@@ -1808,7 +1776,6 @@ impl<'gc> MovieClip<'gc> {
                 let new_tag = QueuedTag {
                     tag_type: QueuedTagAction::Place(params.version),
                     tag_start: params.tag_start,
-                    tag_len: params.tag_len,
                 };
                 let bucket = write
                     .queued_tags
@@ -1942,7 +1909,7 @@ impl<'gc> MovieClip<'gc> {
                     let object: Avm1Object<'gc> = StageObject::for_display_object(
                         activation.context.gc_context,
                         self.into(),
-                        Some(prototype),
+                        prototype,
                     )
                     .into();
                     self.0.write(activation.context.gc_context).object = Some(object.into());
@@ -1969,7 +1936,7 @@ impl<'gc> MovieClip<'gc> {
             let object: Avm1Object<'gc> = StageObject::for_display_object(
                 context.gc_context,
                 self.into(),
-                Some(context.avm1.prototypes().movie_clip),
+                context.avm1.prototypes().movie_clip,
             )
             .into();
             self.0.write(context.gc_context).object = Some(object.into());
@@ -2002,7 +1969,7 @@ impl<'gc> MovieClip<'gc> {
                 .iter()
             {
                 if event_handler.events.contains(ClipEventFlag::INITIALIZE) {
-                    context.action_queue.queue_actions(
+                    context.action_queue.queue_action(
                         self.into(),
                         ActionType::Initialize {
                             bytecode: event_handler.action_data.clone(),
@@ -2015,7 +1982,7 @@ impl<'gc> MovieClip<'gc> {
                 }
             }
 
-            context.action_queue.queue_actions(
+            context.action_queue.queue_action(
                 self.into(),
                 ActionType::Construct {
                     constructor: avm1_constructor,
@@ -2202,6 +2169,10 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).button_mode = button_mode;
     }
 
+    pub fn drawing(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<'_, Drawing> {
+        RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
+    }
+
     pub fn is_button_mode(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> bool {
         if self.forced_button_mode()
             || self
@@ -2339,7 +2310,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     _ => unreachable!(),
                 };
 
-                if let Err(e) = self.place_object(context, &mut reader, tag.tag_len, version) {
+                if let Err(e) = self.place_object(context, &mut reader, version) {
                     log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
                 }
             }
@@ -2547,7 +2518,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
-        Some(RefMut::map(self.0.write(gc_context), |s| &mut s.drawing))
+        Some(self.drawing(gc_context))
     }
 
     fn post_instantiation(
@@ -2640,15 +2611,27 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
-    impl_display_object_container!(container);
+    fn raw_container(&self) -> Ref<'_, ChildContainer<'gc>> {
+        Ref::map(self.0.read(), |this| &this.container)
+    }
+
+    fn raw_container_mut(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> RefMut<'_, ChildContainer<'gc>> {
+        RefMut::map(self.0.write(gc_context), |this| &mut this.container)
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
-    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
@@ -2715,7 +2698,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                             }
                         }
 
-                        context.action_queue.queue_actions(
+                        context.action_queue.queue_action(
                             self.into(),
                             ActionType::Normal {
                                 bytecode: event_handler.action_data.clone(),
@@ -2731,7 +2714,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     if let Some(name) = event.method_name() {
                         // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
                         if !event.is_key_event() || read.has_focus {
-                            context.action_queue.queue_actions(
+                            context.action_queue.queue_action(
                                 self.into(),
                                 ActionType::Method {
                                     object,
@@ -2910,7 +2893,6 @@ impl<'gc> MovieClipData<'gc> {
     fn goto_place_object<'a>(
         &mut self,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
         version: u8,
         goto_commands: &mut Vec<GotoPlaceObject<'a>>,
         is_rewind: bool,
@@ -2919,7 +2901,7 @@ impl<'gc> MovieClipData<'gc> {
         let tag_start =
             reader.get_ref().as_ptr() as u64 - self.static_data.swf.as_ref().as_ptr() as u64;
         let place_object = if version == 1 {
-            reader.read_place_object(tag_len)
+            reader.read_place_object()
         } else {
             reader.read_place_object_2_or_3(version)
         }?;
@@ -2932,7 +2914,6 @@ impl<'gc> MovieClipData<'gc> {
             is_rewind,
             index,
             tag_start,
-            tag_len,
             version,
         );
         if let Some(i) = goto_commands.iter().position(|o| o.depth() == depth) {
@@ -3004,16 +2985,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         version: u8,
     ) -> Result<(), Error> {
         let define_bits_lossless = reader.read_define_bits_lossless(version)?;
-        let bitmap_info = context
-            .renderer
-            .register_bitmap_png(&define_bits_lossless)?;
-        let bitmap = Bitmap::new(
-            context,
-            define_bits_lossless.id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let bitmap = ruffle_render::utils::decode_define_bits_lossless(&define_bits_lossless)?;
+        let bitmap = Bitmap::new(context, define_bits_lossless.id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -3124,20 +3097,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         let id = reader.read_u16()?;
         let jpeg_data = reader.read_slice_to_end();
-        let bitmap_info = context.renderer.register_bitmap_jpeg(
-            jpeg_data,
-            context
-                .library
-                .library_for_movie_mut(self.movie())
-                .jpeg_tables(),
-        )?;
-        let bitmap = Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let jpeg_tables = context
+            .library
+            .library_for_movie_mut(self.movie())
+            .jpeg_tables();
+        let jpeg_data = ruffle_render::utils::glue_tables_to_jpeg(jpeg_data, jpeg_tables);
+        let bitmap = ruffle_render::utils::decode_define_bits_jpeg(&jpeg_data, None)?;
+        let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -3153,14 +3119,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         let id = reader.read_u16()?;
         let jpeg_data = reader.read_slice_to_end();
-        let bitmap_info = context.renderer.register_bitmap_jpeg_2(jpeg_data)?;
-        let bitmap = Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, None)?;
+        let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -3182,16 +3142,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         }
         let jpeg_data = reader.read_slice(jpeg_len)?;
         let alpha_data = reader.read_slice_to_end();
-        let bitmap_info = context
-            .renderer
-            .register_bitmap_jpeg_3_or_4(jpeg_data, alpha_data)?;
-        let bitmap = Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
+        let bitmap = ruffle_render::utils::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
+        let bitmap = Bitmap::new(context, id, bitmap)?;
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -3675,7 +3627,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             .swf
             .resize_to_reader(reader, tag_len);
         if !slice.is_empty() {
-            context.action_queue.queue_actions(
+            context.action_queue.queue_action(
                 self.into(),
                 ActionType::Normal { bytecode: slice },
                 false,
@@ -3688,14 +3640,13 @@ impl<'gc, 'a> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
         version: u8,
     ) -> Result<(), Error> {
         let mut write = self.0.write(context.gc_context);
         let tag_start =
             reader.get_ref().as_ptr() as u64 - write.static_data.swf.as_ref().as_ptr() as u64;
         let place_object = if version == 1 {
-            reader.read_place_object(tag_len)
+            reader.read_place_object()
         } else {
             reader.read_place_object_2_or_3(version)
         }?;
@@ -3703,7 +3654,6 @@ impl<'gc, 'a> MovieClip<'gc> {
         let new_tag = QueuedTag {
             tag_type: QueuedTagAction::Place(version),
             tag_start,
-            tag_len,
         };
         let bucket = write
             .queued_tags
@@ -3719,11 +3669,10 @@ impl<'gc, 'a> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
         version: u8,
     ) -> Result<(), Error> {
         let place_object = if version == 1 {
-            reader.read_place_object(tag_len)
+            reader.read_place_object()
         } else {
             reader.read_place_object_2_or_3(version)
         }?;
@@ -3778,7 +3727,6 @@ impl<'gc, 'a> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
         version: u8,
     ) -> Result<(), Error> {
         let mut write = self.0.write(context.gc_context);
@@ -3793,7 +3741,6 @@ impl<'gc, 'a> MovieClip<'gc> {
         let new_tag = QueuedTag {
             tag_type: QueuedTagAction::Remove(version),
             tag_start,
-            tag_len,
         };
         let bucket = write
             .queued_tags
@@ -4023,9 +3970,6 @@ struct GotoPlaceObject<'a> {
     /// not possible and we want to add children after the goto completes.
     tag_start: u64,
 
-    /// The length of the PlaceObject tag at `tag_start`.
-    tag_len: usize,
-
     /// The version of the PlaceObject tag at `tag_start`.
     version: u8,
 }
@@ -4037,7 +3981,6 @@ impl<'a> GotoPlaceObject<'a> {
         is_rewind: bool,
         index: usize,
         tag_start: u64,
-        tag_len: usize,
         version: u8,
     ) -> Self {
         if is_rewind {
@@ -4075,7 +4018,6 @@ impl<'a> GotoPlaceObject<'a> {
             place_object,
             index,
             tag_start,
-            tag_len,
             version,
         }
     }
@@ -4202,7 +4144,6 @@ impl QueuedTagList {
 pub struct QueuedTag {
     pub tag_type: QueuedTagAction,
     pub tag_start: u64,
-    pub tag_len: usize,
 }
 
 /// The type of queued tag.

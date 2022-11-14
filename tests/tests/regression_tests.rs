@@ -29,11 +29,6 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-#[cfg(feature = "imgtests")]
-fn get_img_platform_suffix(info: &wgpu::AdapterInfo) -> String {
-    format!("{}-{:?}", std::env::consts::OS, info.backend)
-}
-
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
 fn set_logger() {
@@ -155,6 +150,8 @@ swf_tests! {
     (as2_super_and_this_v8, "avm1/as2_super_and_this_v8", 1),
     (as2_super_via_manual_prototype, "avm1/as2_super_via_manual_prototype", 1),
     (as3_add, "avm2/add", 1),
+    (as3_agal_compiler, "avm2/agal_compiler", 1),
+    (as3_application_domain, "avm2/application_domain", 1),
     (as3_array_access, "avm2/array_access", 1),
     (as3_array_concat, "avm2/array_concat", 1),
     (as3_array_constr, "avm2/array_constr", 1),
@@ -190,11 +187,13 @@ swf_tests! {
     (as3_astypelate, "avm2/astypelate", 1),
     (as3_bitand, "avm2/bitand", 1),
     (as3_bitmap_constr, "avm2/bitmap_constr", 1),
+    (as3_bitmap_data, "avm2/bitmap_data", 1),
     (as3_bitmapdata_copypixels, "avm2/bitmapdata_copypixels", 2, img = true),
     #[ignore] (as3_bitmap_properties, "avm2/bitmap_properties", 1),
     (as3_bitmap_subclass, "avm2/bitmap_subclass", 1),
     #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmap_subclass_properties, "avm2/bitmap_subclass_properties", 1, img = true),
     (as3_bitmap_timeline, "avm2/bitmap_timeline", 1),
+    #[cfg_attr(not(feature = "imgtests"), ignore)] (as3_bitmapdata_clone, "avm2/bitmapdata_clone", 1, img = true),
     (as3_bitmapdata_constr, "avm2/bitmapdata_constr", 1),
     (as3_bitmapdata_dispose, "avm2/bitmapdata_dispose", 1),
     // We need a render backend in order to call `BitmapData.draw`
@@ -283,6 +282,7 @@ swf_tests! {
     (as3_documentclass, "avm2/documentclass", 1),
     (as3_domain_memory, "avm2/domain_memory", 1),
     (as3_drag_drop, "avm2/drag_drop", 14),
+    (as3_edittext_antialiastype, "avm2/edittext_antialiastype", 1),
     (as3_edittext_default_format, "avm2/edittext_default_format", 1),
     (as3_edittext_html_entity, "avm2/edittext_html_entity", 1),
     (as3_edittext_html_roundtrip, "avm2/edittext_html_roundtrip", 1),
@@ -328,6 +328,7 @@ swf_tests! {
     (as3_function_call, "avm2/function_call", 1),
     #[ignore] (as3_function_proto, "avm2/function_proto", 1),
     (as3_function_length, "avm2/function_length", 1),
+    (as3_function_object, "avm2/function_object", 1),
     (as3_function_to_locale_string, "avm2/function_to_locale_string", 1),
     (as3_function_to_string, "avm2/function_to_string", 1),
     (as3_function_type, "avm2/function_type", 1),
@@ -518,6 +519,7 @@ swf_tests! {
     (as3_string_match, "avm2/string_match", 1),
     (as3_string_replace, "avm2/string_replace", 1),
     (as3_string_search, "avm2/string_search", 1),
+    (as3_swz, "avm2/swz", 10),
     (as3_try_catch, "avm2/try_catch", 1),
     (as3_try_catch_typed, "avm2/try_catch_typed", 1),
     (as3_string_slice_substr_substring, "avm2/string_slice_substr_substring", 1),
@@ -597,25 +599,7 @@ swf_tests! {
     (create_empty_movie_clip, "avm1/create_empty_movie_clip", 2),
     (cross_movie_root, "avm1/cross_movie_root", 5),
     (custom_clip_methods, "avm1/custom_clip_methods", 3),
-    (date_constructor, "avm1/date/constructor", 1),
-    (date_is_special, "avm1/date_is_special", 1),
-    (date_set_date, "avm1/date/setDate", 1),
-    (date_set_full_year, "avm1/date/setFullYear", 1),
-    (date_set_hours, "avm1/date/setHours", 1),
-    (date_set_milliseconds, "avm1/date/setMilliseconds", 1),
-    (date_set_minutes, "avm1/date/setMinutes", 1),
-    (date_set_month, "avm1/date/setMonth", 1),
-    (date_set_seconds, "avm1/date/setSeconds", 1),
-    (date_set_time, "avm1/date/setTime", 1),
-    (date_set_utc_date, "avm1/date/setUTCDate", 1),
-    (date_set_utc_full_year, "avm1/date/setUTCFullYear", 1),
-    (date_set_utc_hours, "avm1/date/setUTCHours", 1),
-    (date_set_utc_milliseconds, "avm1/date/setUTCMilliseconds", 1),
-    (date_set_utc_minutes, "avm1/date/setUTCMinutes", 1),
-    (date_set_utc_month, "avm1/date/setUTCMonth", 1),
-    (date_set_utc_seconds, "avm1/date/setUTCSeconds", 1),
-    (date_set_year, "avm1/date/setYear", 1),
-    (date_utc, "avm1/date/UTC", 1),
+    (date, "avm1/date", 1),
     (default_names, "avm1/default_names", 6),
     (define_function_case_sensitive, "avm1/define_function_case_sensitive", 2),
     (define_function2_preload_order, "avm1/define_function2_preload_order", 1),
@@ -630,6 +614,7 @@ swf_tests! {
     (drop_shadow_filter, "avm1/drop_shadow_filter", 1),
     (duplicate_movie_clip_drawing, "avm1/duplicate_movie_clip_drawing", 1),
     (duplicate_movie_clip, "avm1/duplicate_movie_clip", 1),
+    (edittext_antialiastype, "avm1/edittext_antialiastype", 1),
     (edittext_default_format, "avm1/edittext_default_format", 1),
     (edittext_font_size, "avm1/edittext_font_size", 1),
     (edittext_html_entity, "avm1/edittext_html_entity", 1),
@@ -1035,7 +1020,7 @@ fn shared_object_avm1() -> Result<(), Error> {
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
     let mut memory_storage_backend: Box<dyn StorageBackend> =
-        Box::new(MemoryStorageBackend::default());
+        Box::<MemoryStorageBackend>::default();
 
     // Initial run; no shared object data.
     test_swf_with_hooks(
@@ -1089,7 +1074,7 @@ fn shared_object_avm2() -> Result<(), Error> {
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
     let mut memory_storage_backend: Box<dyn StorageBackend> =
-        Box::new(MemoryStorageBackend::default());
+        Box::<MemoryStorageBackend>::default();
 
     // Initial run; no shared object data.
     test_swf_with_hooks(
@@ -1513,7 +1498,8 @@ fn run_swf(
             .capture_frame(false)
             .expect("Failed to capture image");
 
-        let suffix = get_img_platform_suffix(&renderer.descriptors().info);
+        let info = renderer.descriptors().adapter.get_info();
+        let suffix = format!("{}-{:?}", std::env::consts::OS, info.backend);
 
         let expected_image_path = base_path.join(format!("expected-{}.png", &suffix));
         let expected_image = image::open(&expected_image_path);
@@ -1524,15 +1510,15 @@ fn run_swf(
             }
             Err(e) => {
                 eprintln!(
-                    "Failed to open expected image {:?}: {:?}",
-                    &expected_image_path, e
+                    "Failed to open expected image {:?}: {e:?}",
+                    &expected_image_path
                 );
                 false
             }
         };
 
         if !matches {
-            let actual_image_path = base_path.join(format!("actual-{}.png", suffix));
+            let actual_image_path = base_path.join(format!("actual-{suffix}.png"));
             actual_image.save_with_format(&actual_image_path, image::ImageFormat::Png)?;
             panic!(
                 "Test output does not match expected image - saved actual image to {:?}",
@@ -1575,7 +1561,7 @@ impl ExternalInterfaceTestProvider {
 }
 
 fn do_trace(context: &mut UpdateContext<'_, '_, '_>, args: &[ExternalValue]) -> ExternalValue {
-    context.avm_trace(&format!("[ExternalInterface] trace: {:?}", args));
+    context.avm_trace(&format!("[ExternalInterface] trace: {args:?}"));
     "Traced!".into()
 }
 

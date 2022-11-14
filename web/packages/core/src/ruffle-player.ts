@@ -224,9 +224,7 @@ export class RufflePlayer extends HTMLElement {
         );
         this.container = this.shadow.getElementById("container")!;
         this.playButton = this.shadow.getElementById("play_button")!;
-        if (this.playButton) {
-            this.playButton.addEventListener("click", () => this.play());
-        }
+        this.playButton.addEventListener("click", () => this.play());
 
         this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
         this.preloader = this.shadow.getElementById("preloader")!;
@@ -665,9 +663,7 @@ export class RufflePlayer extends HTMLElement {
     play(): void {
         if (this.instance) {
             this.instance.play();
-            if (this.playButton) {
-                this.playButton.style.display = "none";
-            }
+            this.playButton.style.display = "none";
         }
     }
 
@@ -975,9 +971,7 @@ export class RufflePlayer extends HTMLElement {
     pause(): void {
         if (this.instance) {
             this.instance.pause();
-            if (this.playButton) {
-                this.playButton.style.display = "block";
-            }
+            this.playButton.style.display = "block";
         }
     }
 
@@ -997,9 +991,7 @@ export class RufflePlayer extends HTMLElement {
                     audioContext.resume();
                 }
             }
-            if (this.unmuteOverlay) {
-                this.unmuteOverlay.style.display = "none";
-            }
+            this.unmuteOverlay.style.display = "none";
         }
     }
 

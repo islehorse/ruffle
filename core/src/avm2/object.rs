@@ -62,7 +62,7 @@ pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
-pub use crate::avm2::object::function_object::FunctionObject;
+pub use crate::avm2::object::function_object::{function_allocator, FunctionObject};
 pub use crate::avm2::object::loaderinfo_object::{
     loaderinfo_allocator, LoaderInfoObject, LoaderStream,
 };
@@ -425,7 +425,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return method_object.call(Some(self.into()), arguments, activation);
         }
 
-        Err(format!("Cannot call unknown method id {}", id).into())
+        Err(format!("Cannot call unknown method id {id}").into())
     }
 
     /// Implements the `in` opcode and AS3 operator.
@@ -735,7 +735,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
-            format!("[object {}]", class_name),
+            format!("[object {class_name}]"),
         )
         .into())
     }
@@ -759,7 +759,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
-            format!("[object {}]", class_name),
+            format!("[object {class_name}]"),
         )
         .into())
     }

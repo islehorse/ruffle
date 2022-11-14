@@ -97,6 +97,17 @@ pub fn io_error<'gc>(
     error_constructor(activation, class, message, code)
 }
 
+#[inline(never)]
+#[cold]
+pub fn eof_error<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    message: &str,
+    code: u32,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let class = activation.avm2().classes().eoferror;
+    error_constructor(activation, class, message, code)
+}
+
 fn error_constructor<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class: ClassObject<'gc>,
@@ -111,7 +122,7 @@ fn error_constructor<'gc>(
 
 impl<'gc> std::fmt::Display for Error<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

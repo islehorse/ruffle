@@ -20,15 +20,15 @@ use walkdir::{DirEntry, WalkDir};
 #[derive(Parser, Debug, Copy, Clone)]
 struct SizeOpt {
     /// The amount to scale the page size with
-    #[clap(long = "scale", default_value = "1.0", value_parser)]
+    #[clap(long = "scale", default_value = "1.0")]
     scale: f64,
 
     /// Optionally override the output width
-    #[clap(long = "width", value_parser)]
+    #[clap(long = "width")]
     width: Option<u32>,
 
     /// Optionally override the output height
-    #[clap(long = "height", value_parser)]
+    #[clap(long = "height")]
     height: Option<u32>,
 }
 
@@ -36,7 +36,7 @@ struct SizeOpt {
 #[clap(name = "Ruffle Exporter", author, version)]
 struct Opt {
     /// The file or directory of files to export frames from
-    #[clap(name = "swf", value_parser)]
+    #[clap(name = "swf")]
     swf: PathBuf,
 
     /// The file or directory (if multiple frames/files) to store the capture in.
@@ -44,15 +44,15 @@ struct Opt {
     /// - If given one swf and one frame, the name of the swf + ".png"
     /// - If given one swf and multiple frames, the name of the swf as a directory
     /// - If given multiple swfs, this field is required.
-    #[clap(name = "output", value_parser)]
+    #[clap(name = "output")]
     output_path: Option<PathBuf>,
 
     /// Number of frames to capture per file
-    #[clap(short = 'f', long = "frames", default_value = "1", value_parser)]
+    #[clap(short = 'f', long = "frames", default_value = "1")]
     frames: u32,
 
     /// Number of frames to skip
-    #[clap(long = "skipframes", default_value = "0", value_parser)]
+    #[clap(long = "skipframes", default_value = "0")]
     skipframes: u32,
 
     /// Don't show a progress bar
@@ -64,16 +64,16 @@ struct Opt {
 
     /// Type of graphics backend to use. Not all options may be supported by your current system.
     /// Default will attempt to pick the most supported graphics backend.
-    #[clap(long, short, default_value = "default", arg_enum, value_parser)]
+    #[clap(long, short, default_value = "default")]
     graphics: GraphicsBackend,
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, default_value = "high", arg_enum, value_parser)]
+    #[clap(long, short, default_value = "high")]
     power: PowerPreference,
 
     /// Location to store a wgpu trace output
-    #[clap(long, value_parser)]
+    #[clap(long)]
     #[cfg(feature = "render_trace")]
     trace_path: Option<PathBuf>,
 
@@ -117,7 +117,7 @@ fn take_screenshot(
             WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,
         )
         .with_movie(movie)
-        .with_viewport_dimensions(width, height, size.scale as f64)
+        .with_viewport_dimensions(width, height, size.scale)
         .build();
 
     let mut result = Vec::new();
@@ -243,7 +243,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     } else {
         for (frame, image) in frames.iter().enumerate() {
             let mut path: PathBuf = (&output).into();
-            path.push(format!("{}.png", frame));
+            path.push(format!("{frame}.png"));
             image.save(&path)?;
         }
     }
@@ -266,7 +266,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     if let Some(progress) = progress {
         progress.finish_with_message(message);
     } else {
-        println!("{}", message);
+        println!("{message}");
     }
 
     Ok(())
@@ -331,7 +331,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 let _ = create_dir_all(&parent);
                 for (frame, image) in frames.iter().enumerate() {
                     let mut destination = parent.clone();
-                    destination.push(format!("{}.png", frame));
+                    destination.push(format!("{frame}.png"));
                     image.save(&destination)?;
                 }
             }
@@ -358,7 +358,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     if let Some(progress) = progress {
         progress.finish_with_message(message);
     } else {
-        println!("{}", message);
+        println!("{message}");
     }
 
     Ok(())

@@ -314,7 +314,7 @@ impl fmt::Debug for Executable<'_> {
         match self {
             Executable::Native(nf) => f
                 .debug_tuple("Executable::Native")
-                .field(&format!("{:p}", nf))
+                .field(&format!("{nf:p}"))
                 .finish(),
             Executable::Action(af) => f.debug_tuple("Executable::Action").field(&af).finish(),
         }
@@ -505,12 +505,10 @@ impl<'gc> FunctionObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
     ) -> Self {
-        let base = ScriptObject::new(gc_context, fn_proto);
-
-        FunctionObject {
-            base,
+        Self {
+            base: ScriptObject::new(gc_context, Some(fn_proto)),
             data: GcCell::allocate(
                 gc_context,
                 FunctionObjectData {
@@ -533,7 +531,7 @@ impl<'gc> FunctionObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         function: Option<Executable<'gc>>,
         constructor: Option<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         let function = Self::bare_function(gc_context, function, constructor, fn_proto).into();
@@ -558,7 +556,7 @@ impl<'gc> FunctionObject<'gc> {
     pub fn function(
         gc_context: MutationContext<'gc, '_>,
         function: impl Into<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(gc_context, Some(function.into()), None, fn_proto, prototype)
@@ -569,7 +567,7 @@ impl<'gc> FunctionObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         constructor: impl Into<Executable<'gc>>,
         function: impl Into<Executable<'gc>>,
-        fn_proto: Option<Object<'gc>>,
+        fn_proto: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Object<'gc> {
         Self::allocate_function(
@@ -742,9 +740,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let base = ScriptObject::new(activation.context.gc_context, Some(prototype));
-        let fn_object = FunctionObject {
-            base,
+        Ok(FunctionObject {
+            base: ScriptObject::new(activation.context.gc_context, Some(prototype)),
             data: GcCell::allocate(
                 activation.context.gc_context,
                 FunctionObjectData {
@@ -752,9 +749,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                     constructor: None,
                 },
             ),
-        };
-
-        Ok(fn_object.into())
+        }
+        .into())
     }
 
     fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {

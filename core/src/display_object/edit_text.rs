@@ -730,7 +730,7 @@ impl<'gc> EditText<'gc> {
                 edit_text.bounds.set_x(new_x);
                 edit_text.bounds.set_width(width);
             } else {
-                let width = edit_text.static_data.bounds.x_max - edit_text.static_data.bounds.x_min;
+                let width = edit_text.static_data.bounds.width();
                 edit_text.bounds.set_width(width);
             }
             let height = intrinsic_bounds.height() + padding;
@@ -1084,6 +1084,10 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    pub fn render_settings(self) -> TextRenderSettings {
+        self.0.read().render_settings.clone()
+    }
+
     pub fn set_render_settings(
         self,
         gc_context: MutationContext<'gc, '_>,
@@ -1331,7 +1335,7 @@ impl<'gc> EditText<'gc> {
             let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
                 context.gc_context,
                 (*self).into(),
-                Some(context.avm1.prototypes().text_field),
+                context.avm1.prototypes().text_field,
             )
             .into();
 
@@ -1686,11 +1690,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
-    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
         Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+    fn raw_interactive_mut(
+        &self,
+        mc: MutationContext<'gc, '_>,
+    ) -> RefMut<InteractiveObjectBase<'gc>> {
         RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 

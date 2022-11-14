@@ -110,6 +110,8 @@ pub struct SystemClasses<'gc> {
     pub typeerror: ClassObject<'gc>,
     pub verifyerror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
+    pub eoferror: ClassObject<'gc>,
+    pub uncaughterrorevents: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -187,6 +189,8 @@ impl<'gc> SystemClasses<'gc> {
             typeerror: object,
             verifyerror: object,
             ioerror: object,
+            eoferror: object,
+            uncaughterrorevents: object,
         }
     }
 }
@@ -595,9 +599,6 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    // package `flash.ui`
-    class(activation, flash::ui::keyboard::create_class(mc), script)?;
-
     // package `flash.net`
     avm2_system_class!(
         sharedobject,
@@ -712,6 +713,7 @@ fn load_playerglobal<'gc>(
                 illegaloperationerror
             ),
             ("flash.errors", "IOError", ioerror),
+            ("flash.errors", "EOFError", eoferror),
             ("flash.events", "Event", event),
             ("flash.events", "TextEvent", textevent),
             ("flash.events", "ErrorEvent", errorevent),
@@ -721,6 +723,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "IOErrorEvent", ioerrorevent),
             ("flash.events", "MouseEvent", mouseevent),
             ("flash.events", "FullScreenEvent", fullscreenevent),
+            ("flash.events", "UncaughtErrorEvents", uncaughterrorevents),
             ("flash.geom", "Matrix", matrix),
             ("flash.geom", "Point", point),
             ("flash.geom", "Rectangle", rectangle),
