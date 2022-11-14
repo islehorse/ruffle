@@ -1069,13 +1069,12 @@ impl WebGlRenderBackend {
 impl RenderBackend for WebGlRenderBackend {
     fn render_offscreen(
         &mut self,
-        handle: BitmapHandle,
+        _handle: BitmapHandle,
         width: u32,
         height: u32,
         commands: CommandList,
-        clear_color: Color,
     ) -> Result<Bitmap, ruffle_render::error::Error> {
-        self.begin_frame_offscreen(clear_color, width, height);
+        self.begin_frame_offscreen(Color { r: 0, g: 0, b: 0, a: 0 }, width, height);
         commands.execute(self);
         Ok(self.end_frame_offscreen().unwrap()) // TODO errors
     }

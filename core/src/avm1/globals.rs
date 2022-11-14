@@ -688,7 +688,7 @@ pub fn create_globals<'gc>(
         gc_context,
         Executable::Native(xml_socket::constructor),
         constructor_to_fn!(xml_socket::constructor),
-        Some(function_proto),
+        function_proto,
         xml_socket_proto,
     );
     let string = string::create_string_object(gc_context, string_proto, function_proto);
