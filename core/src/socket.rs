@@ -4,7 +4,6 @@ use crate::{
     context::UpdateContext,
     string::AvmString,
 };
-use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use std::collections::VecDeque;

@@ -19,7 +19,7 @@ use std::sync::{Arc, Mutex};
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 
-#[derive(clap::ArgEnum, Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(clap::ValueEnum, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum XmlSocketBehavior {
     /// No `XMLSocket` support (i.e. `XMLSocket.connect()` always return `false`)
     Disabled,
