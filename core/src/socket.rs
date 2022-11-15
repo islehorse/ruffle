@@ -226,8 +226,7 @@ impl<'gc> XmlSockets<'gc> {
                         .expect("only valid handles in SocketAction")
                         .target;
 
-                    let data =
-                        AvmString::new_utf8(activation.context.gc_context, UTF_8.decode(&data).0);
+                    let data = AvmString::new_utf8_bytes(activation.context.gc_context, &data);
 
                     let _ = TObject::call_method(
                         &target,
