@@ -67,6 +67,10 @@ export interface JsSocket {
 
 export class JsSocket {}
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+//@ts-ignore
+window.JsSocket = JsSocket;
+
 const wrapJsSocket = (socket: JsSocket) =>
     Object.assign(new JsSocket(), socket);
 
