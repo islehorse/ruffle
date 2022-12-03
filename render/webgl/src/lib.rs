@@ -2,8 +2,11 @@
 
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
+use gc_arena::MutationContext;
 use ruffle_render::backend::null::NullBitmapSource;
-use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
+use ruffle_render::backend::{
+    Context3D, Context3DCommand, RenderBackend, ShapeHandle, ViewportDimensions,
+};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::error::Error as BitmapError;
@@ -692,6 +695,8 @@ impl WebGlRenderBackend {
                     .enable_vertex_attrib_array(program.vertex_color_location);
             }
 
+            let num_vertex_attributes = program.num_vertex_attributes;
+
             draws.push(match draw.draw_type {
                 TessDrawType::Color => Draw {
                     draw_type: DrawType::Color,
@@ -724,7 +729,7 @@ impl WebGlRenderBackend {
                 TessDrawType::Bitmap(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
                         matrix: bitmap.matrix,
-                        handle: bitmap.bitmap,
+                        handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self).unwrap(),
                         is_smoothed: bitmap.is_smoothed,
                         is_repeating: bitmap.is_repeating,
                     }),
@@ -744,7 +749,8 @@ impl WebGlRenderBackend {
 
             self.bind_vertex_array(None);
 
-            for i in program.num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
+            // Don't use 'program' here in order to satisfy the borrow checker
+            for i in num_vertex_attributes..NUM_VERTEX_ATTRIBUTES {
                 self.gl.disable_vertex_attrib_array(i);
             }
         }
@@ -1148,10 +1154,6 @@ impl RenderBackend for WebGlRenderBackend {
         self.end_frame();
     }
 
-    fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
-    }
-
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         let format = match bitmap.format() {
             BitmapFormat::Rgb => Gl::RGB,
@@ -1234,6 +1236,18 @@ impl RenderBackend for WebGlRenderBackend {
             .map_err(|e| BitmapError::JavascriptError(e.into()))?;
 
         Ok(())
+    }
+
+    fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, BitmapError> {
+        Err(BitmapError::Unimplemented)
+    }
+    fn context3d_present<'gc>(
+        &mut self,
+        _context: &mut dyn Context3D,
+        _commands: Vec<Context3DCommand<'gc>>,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Result<(), BitmapError> {
+        Err(BitmapError::Unimplemented)
     }
 }
 

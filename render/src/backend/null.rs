@@ -1,14 +1,20 @@
 use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSize, BitmapSource};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::shape_utils::DistilledShape;
+use gc_arena::MutationContext;
 use swf::Color;
+
+use super::{Context3D, Context3DCommand};
 
 pub struct NullBitmapSource;
 
 impl BitmapSource for NullBitmapSource {
-    fn bitmap(&self, _id: u16) -> Option<BitmapInfo> {
+    fn bitmap_size(&self, _id: u16) -> Option<BitmapSize> {
+        None
+    }
+    fn bitmap_handle(&self, _id: u16, _renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
         None
     }
 }
@@ -59,10 +65,6 @@ impl RenderBackend for NullRenderer {
     }
 
     fn submit_frame(&mut self, _clear: Color, _commands: CommandList) {}
-
-    fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
-        None
-    }
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(0))
     }
@@ -76,5 +78,18 @@ impl RenderBackend for NullRenderer {
         _rgba: Vec<u8>,
     ) -> Result<(), Error> {
         Ok(())
+    }
+
+    fn create_context3d(&mut self) -> Result<Box<dyn super::Context3D>, Error> {
+        Err(Error::Unimplemented)
+    }
+
+    fn context3d_present<'gc>(
+        &mut self,
+        _context: &mut dyn Context3D,
+        _commands: Vec<Context3DCommand<'gc>>,
+        _mc: MutationContext<'gc, '_>,
+    ) -> Result<(), Error> {
+        Err(Error::Unimplemented)
     }
 }
